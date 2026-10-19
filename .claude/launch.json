@@ -1,0 +1,26 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "web-wasm",
+      "runtimeExecutable": "./gradlew",
+      "runtimeArgs": [
+        ":webApp:wasmJsBrowserDevelopmentRun",
+        "--console=plain"
+      ],
+      "port": 8080
+    },
+    {
+      "name": "web-wasm-prod",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8081",
+        "--directory",
+        "webApp/build/dist/wasmJs/productionExecutable"
+      ],
+      "port": 8081
+    }
+  ]
+}
