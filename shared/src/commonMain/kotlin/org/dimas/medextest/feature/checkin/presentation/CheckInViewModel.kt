@@ -46,6 +46,8 @@ class CheckInViewModel(
             }
         }
 
+    fun warmUp() = intent {}
+
     override fun onOpened(preselectedMood: Mood?) {
         intent {
             reduce { CheckInState(mood = preselectedMood, symptoms = state.symptoms) }

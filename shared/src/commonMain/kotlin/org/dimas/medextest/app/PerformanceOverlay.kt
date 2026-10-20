@@ -22,8 +22,12 @@ internal fun PerformanceOverlay(measure: Boolean, modifier: Modifier = Modifier)
 
     if (measure && (hudEnabled || measuring)) PerfMonitorEffects(monitor)
     if (hudEnabled) {
-        val snapshot by monitor.snapshot.collectAsState()
-        val tasks by backgroundTasks.tasks.collectAsState()
-        PerfHud(snapshot = snapshot, running = RunningTasksSummary.of(tasks), modifier = modifier)
+        val snapshot = monitor.snapshot.collectAsState()
+        val tasks = backgroundTasks.tasks.collectAsState()
+        PerfHud(
+            snapshot = { snapshot.value },
+            running = { RunningTasksSummary.of(tasks.value) },
+            modifier = modifier,
+        )
     }
 }

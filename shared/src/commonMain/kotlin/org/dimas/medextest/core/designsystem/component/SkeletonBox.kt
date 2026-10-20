@@ -5,14 +5,13 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.drawOutline
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import org.dimas.medextest.core.designsystem.theme.MedExColors
@@ -25,7 +24,7 @@ fun SkeletonBox(
     shape: Shape = RoundedCornerShape(12.dp),
 ) {
     val transition = rememberInfiniteTransition(label = "skeleton")
-    val alpha by transition.animateFloat(
+    val alpha = transition.animateFloat(
         initialValue = 0.45f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(tween(SKELETON_PULSE_MS), RepeatMode.Reverse),
@@ -33,8 +32,10 @@ fun SkeletonBox(
     )
     Box(
         modifier = modifier
-            .graphicsLayer { this.alpha = alpha }
-            .clip(shape)
-            .background(MedExColors.Divider),
+            .graphicsLayer()
+            .drawWithCache {
+                val outline = shape.createOutline(size, layoutDirection, this)
+                onDrawBehind { drawOutline(outline, MedExColors.Divider, alpha = alpha.value) }
+            },
     )
 }

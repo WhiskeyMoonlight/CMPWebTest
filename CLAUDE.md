@@ -43,7 +43,9 @@ feature/<name>/
 - Тяжёлая работа — через `core.compute.ComputeExecutor` с режимами `ExecutionMode` (Main, Default, Parallel, Cooperative — кванты 6 мс
   с уступкой кадра через `UiYielder`, Worker — пул `WebWorkerBackend`, только веб). Долгие задачи — `core.background.BackgroundTasks`
   в scope приложения (`named(ScopeQualifier.Application)`): переживают уход с экрана, отменяются по id, отдают прогресс раз в 100 мс.
-- Производительность: `core.perf.PerfMonitor` (кадры через `withFrameNanos`, лаг UI-потока), HUD включается в дев-меню.
+- Производительность: `core.perf.PerfMonitor` (кадры через `awaitDisplayFrame`: на вебе `requestAnimationFrame`, на Android/iOS `withFrameNanos`;
+  лаг UI-потока), HUD включается в дев-меню и рисует текст в фазе Draw без семантики — на вебе любой кадр Compose перерисовывает
+  весь канвас, а смена семантики пересобирает a11y-DOM целиком.
 - Адаптивная вёрстка: `WindowWidthClass` (Compact/Medium/Expanded). Фоны во всю ширину, контент ограничен по ширине,
   на широких экранах — NavigationRail и многоколоночная раскладка.
 - Сторонние библиотеки — только официальные JetBrains/Google или согласованные (Orbit, Koin, FileKit). Остальное — свои адаптеры.
@@ -79,7 +81,7 @@ feature/<name>/
 - Рамка — ТЗ на техдемо от 2026-10-13: `/Users/dmitriymalyshev/AndroidStudioProjects/presale-repo/clients/MedEx/Платформа проактивного управления здоровьем пациента/ТЗ на техническое демо Compose Multiplatform — 2026-10-13.md`
   (Главная + Предвизитная анкета UC_050, FileKit, PWA, push → deep link, замеры 120 Гц, выкладка по HTTPS).
   Сверх ТЗ пользователь хочет «боевой» слой данных (репозитории, долгие операции) и замеры корутин на вебе.
-- Исследование и все находки: `docs/research/2026-10-14-cmp-web-orbit.md`.
+- Исследование и все находки: `docs/research/2026-10-14-cmp-web-orbit.md`; аудит производительности UI на вебе — `docs/research/2026-10-20-web-ui-performance.md`.
 
 ## Стек и принятые решения (2026-10-14 — 2026-10-15)
 - Kotlin 2.4.21, CMP 1.12.1, AGP 9.1.1, Gradle 9.5.1, lifecycle 2.11.0, Navigation 3 (`navigation3-ui` 1.2.0-rc01,
@@ -109,7 +111,9 @@ feature/<name>/
 - Нагрузка (2026-10-15): дев-меню → «Нагрузка: корутины и потоки» — 4 сценария (импорт анализов, SHA-256 вложений, фильтр снимка,
   шторм запросов) и SHA-256 выбранного файла, режимы и объём ×1/×4/×10, отмена, отчёт в буфер обмена, HUD поверх всех экранов.
   Замеры в Chrome (wasm и js), с замедлением CPU ×4 и на Android-эмуляторе — в исследовании, раздел «Нагрузка, корутины и многопоточность».
-- Тесты: JVM 112/112 (`shared`) + 27/27 (`compute`), Kotlin/JS в headless Chrome 154/154 (`shared`) + 27/27 (`compute`).
+- Тесты: JVM 116/116 (`shared`) + 27/27 (`compute`), Kotlin/JS в headless Chrome 158/158 (`shared`) + 27/27 (`compute`).
+- Перф UI на вебе (2026-10-20): `tools/perf/run-ui-scenarios.mjs` (эмуляция телефона, CPU ×6, Metal/SwiftShader); `touch-action: none`
+  на `html, body` в `webApp/.../styles.css` — иначе мобильный браузер забирает жест у канваса и шлёт `pointercancel`.
 
 ## Известные проблемы
 - iOS: тестовый бинарник не линкуется на Xcode 16.2 — `ld: framework '_LocationEssentials' not found` (платформенные библиотеки Kotlin 2.4.2x
@@ -126,6 +130,7 @@ feature/<name>/
 - Веб: `tel:` и карта открываются через `window.open(uri, "_blank")` — `tel:` на десктопе даёт пустую вкладку.
 - Верхняя панель дев-меню прокручивается вместе с контентом; на Android прокручиваемый контент заезжает под статус-бар.
 - Панель браузера Claude, когда скрыта, троттлит `requestAnimationFrame` — кадры мерить в своём headless Chrome (`tools/perf`).
+  Chrome на батарее ≤ 20 % (Energy Saver) и телефоны в режиме энергосбережения режут кадры до 30 Гц; `cdp.mjs` выключает Energy Saver в профиле.
 
 ## Следующие шаги
 - Экспорты шрифтов (с кириллицей) и иллюстраций из Figma, эмодзи как картинки.

@@ -1,11 +1,12 @@
 import { spawn } from 'node:child_process';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { setTimeout as sleep } from 'node:timers/promises';
 
 const CHROME = process.env.CHROME_PATH ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 
-export async function launchChrome({ port, profileDir, width = 1280, height = 900, headless = true }) {
+export async function launchChrome({ port, profileDir, width = 1280, height = 900, headless = true, extraArgs = [] }) {
     mkdirSync(profileDir, { recursive: true });
+    disableBatterySaver(profileDir);
     const args = [
         `--remote-debugging-port=${port}`,
         `--user-data-dir=${profileDir}`,
@@ -15,6 +16,7 @@ export async function launchChrome({ port, profileDir, width = 1280, height = 90
         '--disable-background-timer-throttling',
         '--disable-renderer-backgrounding',
         '--disable-backgrounding-occluded-windows',
+        ...extraArgs,
         'about:blank',
     ];
     if (headless) args.unshift('--headless=new');
@@ -29,6 +31,13 @@ export async function launchChrome({ port, profileDir, width = 1280, height = 90
         }
     }
     throw new Error(`Chrome did not open port ${port}`);
+}
+
+function disableBatterySaver(profileDir) {
+    const path = `${profileDir}/Local State`;
+    const state = existsSync(path) ? JSON.parse(readFileSync(path, 'utf8')) : {};
+    state.performance_tuning = { ...state.performance_tuning, battery_saver_mode: { state: 0 } };
+    writeFileSync(path, JSON.stringify(state));
 }
 
 export async function connectPage(port, urlPrefix = process.env.PAGE_URL_PREFIX ?? '') {
